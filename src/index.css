@@ -1,0 +1,36 @@
+@import 'tailwindcss';
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* pulsing halo for the selected robot on the map */
+@keyframes fleet-pulse {
+  0% {
+    r: 12;
+    opacity: 0.55;
+  }
+  100% {
+    r: 26;
+    opacity: 0;
+  }
+}
+
+.fleet-pulse {
+  animation: fleet-pulse 1.4s ease-out infinite;
+}

@@ -105,7 +105,7 @@ The trickiest part is the live generator, so most of the tests target it
 world, every status transition is a legal edge, and a drained robot ends up
 charging. The shared store and the replay engine are covered too
 (`src/domain/fleetReducer.test.ts`, `src/sources/replaySource.test.ts`,
-`src/domain/aggregates.test.ts`). 20 tests total.
+`src/domain/aggregates.test.ts`). 23 tests total.
 
 ## Project layout
 

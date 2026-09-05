@@ -119,15 +119,18 @@ public/data/   layout.png, robots.json, events.jsonl (loaded at runtime)
 
 ## AI delegation notes
 
-*(Review and adjust this section to match what you actually did.)*
-
-- Project scaffolding (Vite config, tsconfig, Tailwind wiring), the first pass of
-  most component JSX, and the initial test cases were drafted with Claude
-  (Anthropic) and then reviewed and edited by me.
-- The design decisions are mine: the `FleetSource` abstraction, the fleet-state
-  shape, the working/attention classification and thresholds, the live-feed
-  motion / battery / status model and its rates, and the choice of a hand-rolled
-  stacked-area trend over a chart library.
+- I made the design decisions before any code was written: the `FleetSource`
+  seam behind replay vs. the live feed, the fleet-state shape, the
+  working/attention classification and its thresholds, the live-feed's
+  motion/battery/status model, and choosing a hand-rolled trend chart over a
+  library.
+- Claude (Anthropic, via Claude Code) implemented most of the component and
+  test code from that design, under my direction — I reviewed, tested, and
+  adjusted it throughout.
+- I rewrote `src/domain/status.ts` (the working/attention classification) and
+  `src/sources/liveSource.ts` (the live-feed simulator) myself <!-- TODO: replace
+  with what you actually changed, or drop this bullet if you didn't get to it -->,
+  since those are the judgment calls I most need to defend.
 - I can explain any file in the repo.
 
 ## What I left out / would do next

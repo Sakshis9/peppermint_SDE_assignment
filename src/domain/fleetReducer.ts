@@ -29,6 +29,7 @@ export const TASK_EVENT_CAP = 50
 export type FleetAction =
   | { type: 'RESET'; roster: RosterEntry[]; battery?: Record<string, number> }
   | { type: 'APPLY_TICK'; t: number; events: RobotEvent[]; taskEvents?: TaskEvent[] }
+  | { type: 'SEEK'; roster: RosterEntry[]; t: number; events: RobotEvent[]; taskEvents?: TaskEvent[] }
 
 function snapshotFromRoster(entry: RosterEntry, battery: number): RobotSnapshot {
   return {
@@ -135,6 +136,41 @@ export function fleetReducer(state: FleetState, action: FleetAction): FleetState
         order: state.order,
         series: pushCapped(state.series, sample, SERIES_CAP),
         taskEvents,
+      }
+    }
+
+    // A seek jumps the clock, possibly backward, to a point the reducer has
+    // already moved past. Folding just the latest per-robot sample onto the
+    // existing state (as APPLY_TICK does) leaves trail/history out of time
+    // order and lets `distance` count a straight-line jump as travel. Instead,
+    // rebuild from a fresh roster baseline and replay every event up to the
+    // target in order, so trail/history/distance land exactly where
+    // continuous playback to that point would have left them.
+    case 'SEEK': {
+      const base = initFleetState(action.roster)
+      const robots = { ...base.robots }
+      for (const ev of action.events) {
+        const prev = robots[ev.robot_id]
+        if (!prev) continue
+        robots[ev.robot_id] = applyEvent(prev, ev)
+      }
+
+      const clock = Math.max(base.clock, action.t)
+      const sample = computeTrendSample(base.order.map((id) => robots[id]), clock)
+      // keep trend history up to the new clock (still valid), drop anything
+      // after it (no longer reachable from here until re-played)
+      const series = pushCapped(
+        state.series.filter((s) => s.t <= clock),
+        sample,
+        SERIES_CAP,
+      )
+
+      return {
+        clock,
+        robots,
+        order: base.order,
+        series,
+        taskEvents: (action.taskEvents ?? []).slice(0, TASK_EVENT_CAP),
       }
     }
 

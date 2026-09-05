@@ -21,10 +21,16 @@ export function computeTrendSample(
   for (const r of robots) {
     byStatus[r.status] += 1
     batterySum += r.battery
-    if (WORKING.has(r.status)) working += 1
+    // Attention takes priority: a robot can be `active`/`on_mission` (working)
+    // and simultaneously low-battery or stale, so these two must be resolved
+    // into one bucket per robot here — otherwise working+attention can exceed
+    // 1 and the trend chart's stacked area (which assumes the three bands
+    // partition the fleet) draws overlapping bands instead of a clean stack.
     const stale = clock - r.lastUpdateT > STALE_AFTER
     if (ATTENTION_STATUS.has(r.status) || r.battery <= LOW_BATTERY || stale) {
       attention += 1
+    } else if (WORKING.has(r.status)) {
+      working += 1
     }
   }
 

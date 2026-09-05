@@ -93,6 +93,19 @@ export function FleetProvider({ roster, events, children }: ProviderProps) {
 
   const onTick = useCallback(
     (tick: Tick) => {
+      if (tick.seeked) {
+        // a seek replaces state outright (see the SEEK reducer action) —
+        // drop anything buffered for the pre-seek position first, or a
+        // flush a frame later would clobber the seek with stale data
+        if (rafRef.current != null) {
+          if (typeof cancelAnimationFrame === 'function') cancelAnimationFrame(rafRef.current)
+          rafRef.current = null
+        }
+        bufferRef.current = { t: 0, events: [], taskEvents: [] }
+        dispatch({ type: 'SEEK', roster, t: tick.t, events: tick.events, taskEvents: tick.taskEvents })
+        setTransport((tr) => ({ ...tr, clock: tick.t }))
+        return
+      }
       const buf = bufferRef.current
       buf.t = Math.max(buf.t, tick.t)
       // later events win when the same robot reports twice within one frame
@@ -105,7 +118,7 @@ export function FleetProvider({ roster, events, children }: ProviderProps) {
             : (setTimeout(flush, 16) as unknown as number)
       }
     },
-    [flush],
+    [flush, roster],
   )
 
   // (re)build the source whenever the kind changes
@@ -160,8 +173,10 @@ export function FleetProvider({ roster, events, children }: ProviderProps) {
   }, [])
 
   const seek = useCallback((t: number) => {
+    // source.seek() emits synchronously, and onTick's `seeked` branch above
+    // dispatches SEEK and updates transport.clock before this call returns —
+    // no separate setTransport needed here (React 18 batches both together).
     sourceRef.current?.seek?.(t)
-    setTransport((tr) => ({ ...tr, clock: t }))
   }, [])
 
   const setSourceKind = useCallback((kind: SourceKind) => {

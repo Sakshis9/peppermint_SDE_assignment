@@ -86,4 +86,31 @@ describe('fleetReducer', () => {
     expect(s.taskEvents).toHaveLength(0)
     expect(s.clock).toBe(0)
   })
+
+  it('SEEK rebuilds trail/history/distance from a full replay instead of folding one sample onto stale state', () => {
+    let s = initFleetState(ROSTER)
+    // forward playback reaches t=50 far from start
+    s = fleetReducer(s, {
+      type: 'APPLY_TICK',
+      t: 50,
+      events: [ev({ robot_id: 'r1', t: 50, x: 510, y: 10 })],
+    })
+    expect(s.robots.r1.distance).toBeCloseTo(500)
+
+    // user scrubs back to t=20: SEEK replays every event from 0..20, so the
+    // odometer and history reflect that shorter path, not the old t=50 state
+    s = fleetReducer(s, {
+      type: 'SEEK',
+      roster: ROSTER,
+      t: 20,
+      events: [
+        ev({ robot_id: 'r1', t: 10, x: 20, y: 10 }),
+        ev({ robot_id: 'r1', t: 20, x: 30, y: 10 }),
+      ],
+    })
+    expect(s.robots.r1.x).toBe(30)
+    expect(s.robots.r1.distance).toBeCloseTo(20) // 10 (start->t10) + 10 (t10->t20)
+    expect(s.robots.r1.history.map((h) => h.t)).toEqual([0, 10, 20]) // still oldest-first
+    expect(s.clock).toBe(20)
+  })
 })

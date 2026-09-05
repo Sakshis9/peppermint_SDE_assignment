@@ -67,7 +67,13 @@ export interface TaskEvent {
 export interface TrendSample {
   t: number
   byStatus: Record<Status, number>
-  /** fraction of the fleet doing work (active | on_mission), 0..1 */
+  /**
+   * fraction of the fleet doing work (active | on_mission) AND not already
+   * flagged for attention, 0..1 — deliberately exclusive of attentionFrac so
+   * the two partition the fleet with `available` for the trend chart's
+   * stacked area (a working robot that is low-battery/stale counts only in
+   * attentionFrac, not here; see computeTrendSample).
+   */
   workingFrac: number
   /** fraction of the fleet that needs an operator's attention, 0..1 */
   attentionFrac: number

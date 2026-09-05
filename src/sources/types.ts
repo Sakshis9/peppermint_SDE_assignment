@@ -10,6 +10,14 @@ export interface Tick {
   t: number
   events: RobotEvent[]
   taskEvents?: TaskEvent[]
+  /**
+   * True only for the tick emitted by `seek()`. A seek jumps the clock
+   * (possibly backward) rather than advancing it, so the consumer must
+   * replace state wholesale instead of folding this batch onto whatever it
+   * had accumulated for a different point in time — see FleetProvider's
+   * handling and the `SEEK` reducer action.
+   */
+  seeked?: boolean
 }
 
 export type TickListener = (tick: Tick) => void

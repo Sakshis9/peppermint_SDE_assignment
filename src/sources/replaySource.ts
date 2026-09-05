@@ -77,15 +77,14 @@ export function createReplaySource(
     while (cursor < sorted.length && sorted[cursor].t <= toClock) cursor += 1
   }
 
-  /** Latest sample per robot at or before `t` — one batch that rebuilds state. */
-  const stateAt = (t: number): RobotEvent[] => {
-    const latest = new Map<string, RobotEvent>()
-    for (const e of sorted) {
-      if (e.t > t) break
-      latest.set(e.robot_id, e)
-    }
-    return [...latest.values()]
-  }
+  /**
+   * Every recorded event at or before `t`, in chronological order — the full
+   * sub-history, not just each robot's latest sample. Seeking replays this
+   * whole batch through the reducer in one shot so trail / history / distance
+   * come out exactly as continuous playback to `t` would have left them,
+   * rather than a single teleport stitched onto whatever was there before.
+   */
+  const stateAt = (t: number): RobotEvent[] => sorted.filter((e) => e.t <= t)
 
   return {
     kind: 'replay',
@@ -115,7 +114,16 @@ export function createReplaySource(
     seek(t: number) {
       const target = Math.max(0, Math.min(t, duration))
       reset(target)
-      emit({ t: target, events: stateAt(target) })
+      const events = stateAt(target)
+      const taskEvents = splitTaskEvents(events)
+      // splitTaskEvents preserves chronological order; the task list is kept
+      // newest-first, so reverse before handing it off
+      emit({
+        t: target,
+        events,
+        taskEvents: taskEvents ? [...taskEvents].reverse() : undefined,
+        seeked: true,
+      })
     },
 
     onTick(listener: TickListener) {

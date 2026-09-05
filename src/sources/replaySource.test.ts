@@ -52,4 +52,17 @@ describe('createReplaySource', () => {
   it('reports the log duration', () => {
     expect(createReplaySource(makeLog()).duration).toBe(100)
   })
+
+  it('seek replays every event up to the target, not just the latest per robot', () => {
+    // makeLog() emits one event per robot every 10 sim-seconds, so seeking to
+    // 55 should carry all 6 samples per robot (t=0..50), not a single one
+    const src = createReplaySource(makeLog(), { speed: 1, loop: false })
+    let last: Tick | null = null
+    src.onTick((tick) => (last = tick))
+    src.seek!(55)
+
+    const r1Events = last!.events.filter((e) => e.robot_id === 'r1')
+    expect(r1Events.map((e) => e.t)).toEqual([0, 10, 20, 30, 40, 50])
+    expect(last!.seeked).toBe(true)
+  })
 })

@@ -1,5 +1,5 @@
 // The challenge deliberately leaves "working" and "needs attention" undefined and
-// asks us to make a defensible call. That call lives here, in one place, so the
+// asks to make a defensible call. That call lives here, in one place, so the
 // map, the list, the stat cards and the trend chart all agree.
 //
 // Reasoning:
